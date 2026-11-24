@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import IntroAnimation from './components/IntroAnimation.jsx';
 import StorySection from './components/StorySection.jsx';
@@ -21,6 +21,24 @@ function SceneDivider() {
 export default function App() {
   const [introDone, setIntroDone] = useState(false);
 
+  // Lock background page scroll while intro is active so swiping only moves the intro
+  useEffect(() => {
+    if (!introDone) {
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+    } else {
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    }
+    return () => {
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    };
+  }, [introDone]);
+
   return (
     <div style={{ position: 'relative', minHeight: '100vh', background: '#10192b' }}>
       {/* Subtle 35mm film grain overlay */}
@@ -37,9 +55,14 @@ export default function App() {
       {/* Main Story Experience */}
       <motion.main
         initial={{ opacity: 0 }}
-        animate={{ opacity: introDone ? 1 : 0.15 }}
+        animate={{ opacity: introDone ? 1 : 0 }}
         transition={{ duration: 0.9, ease: 'easeOut' }}
-        style={{ position: 'relative' }}
+        style={{
+          position: 'relative',
+          pointerEvents: introDone ? 'auto' : 'none',
+          height: introDone ? 'auto' : '100dvh',
+          overflow: introDone ? 'visible' : 'hidden',
+        }}
       >
         {introDone && <SceneProgress />}
 
