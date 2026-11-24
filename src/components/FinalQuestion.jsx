@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { CheckCircle2, ExternalLink, Loader2, MessageCircle } from 'lucide-react';
 import ParticleField from './ParticleField.jsx';
-import { sendApologyResponse } from '../services/whatsappService.js';
+import { APOLOGY_MESSAGES, getWhatsAppFallbackUrl } from '../services/whatsappService.js';
 
 // 5 progressive size levels for the "Never 🤐" button (levels 0..4, click 5 triggers send)
 const NEVER_LEVEL_STYLES = [
@@ -55,12 +55,20 @@ export default function FinalQuestion() {
     []
   );
 
-  const submitChoice = async (action) => {
+  const submitChoice = (action) => {
     if (isSubmitting || result) return;
+    const fallbackUrl = getWhatsAppFallbackUrl(action);
+    const messageText = APOLOGY_MESSAGES[action];
+    if (!fallbackUrl) return;
+
     setIsSubmitting(true);
-    const response = await sendApologyResponse(action, idempotencyKey);
-    setResult({ ...response, action });
-    setIsSubmitting(false);
+    setResult({
+      status: 'redirecting',
+      fallbackUrl,
+      messageText,
+      action,
+    });
+    window.location.href = fallbackUrl;
   };
 
   const handleNeverClick = () => {
