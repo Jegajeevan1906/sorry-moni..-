@@ -2,137 +2,61 @@ import { useEffect, useRef, useState } from 'react';
 import { Volume2, VolumeX, Play, Pause } from 'lucide-react';
 
 /**
- * Gentle procedural ambient soundscape using Web Audio API.
- * Never autoplays with sound; user explicitly toggles play/pause and mute.
+ * Background music player for the uploaded instrumental track (./assets/bgm.mp3).
+ * Never autoplays with sound; visitor controls play/pause and mute.
  */
 export default function AudioPlayer() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const audioRef = useRef(null);
 
-  const audioCtxRef = useRef(null);
-  const masterGainRef = useRef(null);
-  const intervalRef = useRef(null);
-  const activeNodesRef = useRef([]);
+  useEffect(() => {
+    const audio = new Audio('./assets/bgm.mp3');
+    audio.loop = true;
+    audio.preload = 'metadata';
+    audio.volume = 0.55;
+    audioRef.current = audio;
 
-  const stopAmbientLoop = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    activeNodesRef.current.forEach((node) => {
-      try {
-        node.stop();
-        node.disconnect();
-      } catch {
-        // Ignore already stopped oscillators
-      }
-    });
-    activeNodesRef.current = [];
-  };
+    const handleEnded = () => setIsPlaying(false);
+    const handlePause = () => setIsPlaying(false);
+    const handlePlay = () => setIsPlaying(true);
 
-  const playNote = (ctx, masterGain, freq, duration = 6, gainAmount = 0.045) => {
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const filter = ctx.createBiquadFilter();
-    const noteGain = ctx.createGain();
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('pause', handlePause);
+    audio.addEventListener('play', handlePlay);
 
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq, now);
-
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(750, now);
-
-    noteGain.gain.setValueAtTime(0.0001, now);
-    noteGain.gain.linearRampToValueAtTime(gainAmount, now + 1.8);
-    noteGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-
-    osc.connect(filter);
-    filter.connect(noteGain);
-    noteGain.connect(masterGain);
-
-    osc.start(now);
-    osc.stop(now + duration + 0.1);
-    activeNodesRef.current.push(osc);
-
-    osc.onended = () => {
-      activeNodesRef.current = activeNodesRef.current.filter((n) => n !== osc);
+    return () => {
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('play', handlePlay);
+      audio.pause();
+      audioRef.current = null;
     };
-  };
+  }, []);
 
-  const startAmbient = async () => {
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextClass) return;
+  const togglePlay = async () => {
+    const audio = audioRef.current;
+    if (!audio) return;
 
-    if (!audioCtxRef.current) {
-      const ctx = new AudioContextClass();
-      const masterGain = ctx.createGain();
-      masterGain.gain.setValueAtTime(isMuted ? 0 : 0.7, ctx.currentTime);
-      masterGain.connect(ctx.destination);
-      audioCtxRef.current = ctx;
-      masterGainRef.current = masterGain;
-    }
-
-    const ctx = audioCtxRef.current;
-    if (ctx.state === 'suspended') {
-      await ctx.resume();
-    }
-
-    // Warm nostalgic progression: Dmaj9 -> Bm7 -> Gmaj9 -> Asus4
-    const chords = [
-      [146.83, 220.0, 277.18, 329.63],
-      [123.47, 220.0, 293.66, 369.99],
-      [98.0, 196.0, 246.94, 329.63],
-      [110.0, 220.0, 293.66, 329.63],
-    ];
-    let step = 0;
-
-    const triggerChord = () => {
-      if (!audioCtxRef.current || !masterGainRef.current) return;
-      const chord = chords[step % chords.length];
-      chord.forEach((freq, idx) => {
-        setTimeout(() => {
-          if (audioCtxRef.current && masterGainRef.current) {
-            playNote(audioCtxRef.current, masterGainRef.current, freq, 6.5, 0.035);
-          }
-        }, idx * 240);
-      });
-      step += 1;
-    };
-
-    triggerChord();
-    intervalRef.current = setInterval(triggerChord, 5600);
-    setIsPlaying(true);
-  };
-
-  const togglePlay = () => {
     if (isPlaying) {
-      stopAmbientLoop();
-      setIsPlaying(false);
+      audio.pause();
     } else {
-      startAmbient();
+      try {
+        await audio.play();
+      } catch {
+        // Ignore playback rejection if browser blocks without gesture
+      }
     }
   };
 
   const toggleMute = () => {
+    const audio = audioRef.current;
     const nextMuted = !isMuted;
     setIsMuted(nextMuted);
-    if (masterGainRef.current && audioCtxRef.current) {
-      masterGainRef.current.gain.setTargetAtTime(
-        nextMuted ? 0 : 0.7,
-        audioCtxRef.current.currentTime,
-        0.15
-      );
+    if (audio) {
+      audio.muted = nextMuted;
     }
   };
-
-  useEffect(() => {
-    return () => {
-      stopAmbientLoop();
-      if (audioCtxRef.current) {
-        audioCtxRef.current.close().catch(() => {});
-      }
-    };
-  }, []);
 
   return (
     <div
@@ -144,21 +68,21 @@ export default function AudioPlayer() {
         display: 'flex',
         alignItems: 'center',
         gap: '0.45rem',
-        padding: '0.4rem 0.65rem',
+        padding: '0.45rem 0.75rem',
         borderRadius: '999px',
-        background: 'rgba(16, 25, 43, 0.78)',
+        background: 'rgba(16, 25, 43, 0.82)',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
-        border: '1px solid rgba(243, 235, 221, 0.14)',
-        boxShadow: '0 8px 28px rgba(0, 0, 0, 0.35)',
+        border: '1px solid rgba(250, 204, 21, 0.25)',
+        boxShadow: '0 8px 28px rgba(0, 0, 0, 0.4)',
       }}
       role="region"
-      aria-label="Ambient audio controls"
+      aria-label="Background music controls"
     >
       <button
         type="button"
         onClick={togglePlay}
-        aria-label={isPlaying ? 'Pause ambient score' : 'Play ambient score'}
+        aria-label={isPlaying ? 'Pause background music' : 'Play background music'}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -173,14 +97,14 @@ export default function AudioPlayer() {
         }}
       >
         {isPlaying ? <Pause size={14} color="#facc15" /> : <Play size={14} color="#facc15" />}
-        <span style={{ opacity: 0.85 }}>{isPlaying ? 'Score On' : 'Score'}</span>
+        <span style={{ opacity: 0.9 }}>{isPlaying ? 'BGM On' : 'Play BGM'}</span>
       </button>
 
       {isPlaying && (
         <button
           type="button"
           onClick={toggleMute}
-          aria-label={isMuted ? 'Unmute ambient score' : 'Mute ambient score'}
+          aria-label={isMuted ? 'Unmute background music' : 'Mute background music'}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -199,4 +123,3 @@ export default function AudioPlayer() {
     </div>
   );
 }
-
