@@ -3,17 +3,19 @@ import { Volume2, VolumeX, Play, Pause } from 'lucide-react';
 
 /**
  * Background music player for the uploaded instrumental track (./assets/bgm.mp3).
- * Never autoplays with sound; visitor controls play/pause and mute.
+ * Attempts immediate playback on load and unlocks on the very first user gesture
+ * if the browser's autoplay policy blocks unmuted audio before interaction.
  */
 export default function AudioPlayer() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const audioRef = useRef(null);
+  const userPausedRef = useRef(false);
 
   useEffect(() => {
     const audio = new Audio('./assets/bgm.mp3');
     audio.loop = true;
-    audio.preload = 'metadata';
+    audio.preload = 'auto';
     audio.volume = 0.55;
     audioRef.current = audio;
 
@@ -25,7 +27,31 @@ export default function AudioPlayer() {
     audio.addEventListener('pause', handlePause);
     audio.addEventListener('play', handlePlay);
 
+    const tryPlay = () => {
+      if (userPausedRef.current || !audioRef.current) return;
+      audioRef.current.play().catch(() => {
+        // Browser blocked unmuted autoplay; will unlock on first gesture below
+      });
+    };
+
+    const handleFirstGesture = () => {
+      if (!userPausedRef.current && audioRef.current && audioRef.current.paused) {
+        audioRef.current.play().catch(() => {});
+      }
+      window.removeEventListener('pointerdown', handleFirstGesture);
+      window.removeEventListener('touchstart', handleFirstGesture);
+      window.removeEventListener('keydown', handleFirstGesture);
+    };
+
+    tryPlay();
+    window.addEventListener('pointerdown', handleFirstGesture, { passive: true });
+    window.addEventListener('touchstart', handleFirstGesture, { passive: true });
+    window.addEventListener('keydown', handleFirstGesture);
+
     return () => {
+      window.removeEventListener('pointerdown', handleFirstGesture);
+      window.removeEventListener('touchstart', handleFirstGesture);
+      window.removeEventListener('keydown', handleFirstGesture);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('play', handlePlay);
@@ -39,12 +65,14 @@ export default function AudioPlayer() {
     if (!audio) return;
 
     if (isPlaying) {
+      userPausedRef.current = true;
       audio.pause();
     } else {
+      userPausedRef.current = false;
       try {
         await audio.play();
       } catch {
-        // Ignore playback rejection if browser blocks without gesture
+        // Ignore playback rejection
       }
     }
   };
@@ -64,7 +92,7 @@ export default function AudioPlayer() {
         position: 'fixed',
         bottom: '1.25rem',
         right: '1.25rem',
-        zIndex: 60,
+        zIndex: 120,
         display: 'flex',
         alignItems: 'center',
         gap: '0.45rem',

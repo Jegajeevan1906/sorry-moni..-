@@ -26,6 +26,8 @@ export default function App() {
       {/* Subtle 35mm film grain overlay */}
       <div className="film-grain" aria-hidden="true" />
 
+      <AudioPlayer />
+
       <AnimatePresence mode="wait">
         {!introDone && (
           <IntroAnimation key="intro" onComplete={() => setIntroDone(true)} />
@@ -39,12 +41,7 @@ export default function App() {
         transition={{ duration: 0.9, ease: 'easeOut' }}
         style={{ position: 'relative' }}
       >
-        {introDone && (
-          <>
-            <SceneProgress />
-            <AudioPlayer />
-          </>
-        )}
+        {introDone && <SceneProgress />}
 
         {/* Ambient floating particles across the narrative */}
         <div
