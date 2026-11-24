@@ -442,17 +442,17 @@ export default function IntroAnimation({ onComplete }) {
             : 'Glide upward with the wand to mend the silence'}
         </p>
 
-        {/* Animated Swipe Indicator */}
+        {/* Animated Swipe Area with Centered Elder Wand */}
         {phase === 'waiting' && (
           <motion.div
-            animate={shouldReduceMotion ? {} : { y: [0, -7, 0], opacity: [0.45, 0.95, 0.45] }}
-            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            animate={shouldReduceMotion ? {} : { y: [0, -6, 0], opacity: [0.6, 1, 0.6] }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
             style={{
-              marginTop: '0.35rem',
+              marginTop: '0.25rem',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: '0.15rem',
+              gap: '0.2rem',
               color: '#facc15',
             }}
           >
@@ -462,13 +462,110 @@ export default function IntroAnimation({ onComplete }) {
                 fontSize: '0.68rem',
                 letterSpacing: '0.16em',
                 textTransform: 'uppercase',
-                color: 'rgba(250, 204, 21, 0.75)',
+                color: 'rgba(250, 204, 21, 0.8)',
               }}
             >
               Swipe Up
             </span>
           </motion.div>
         )}
+
+        {/* Elder Wand + Luminous Golden Trail inside the Center Swipe Area */}
+        <motion.div
+          aria-hidden="true"
+          animate={
+            phase === 'waiting'
+              ? { y: -dragOffset * 0.55, opacity: 1 }
+              : phase === 'flash'
+                ? { y: -window.innerHeight * 0.45, opacity: [1, 1, 0.25] }
+                : { y: -window.innerHeight * 0.55, opacity: 0 }
+          }
+          transition={
+            phase === 'waiting'
+              ? { type: 'spring', stiffness: 300, damping: 28 }
+              : { duration: 1.05, ease: 'easeInOut' }
+          }
+          style={{
+            position: 'relative',
+            zIndex: 12,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            pointerEvents: 'none',
+            marginTop: '0.15rem',
+          }}
+        >
+          {/* Golden Trail Behind Wand */}
+          <motion.div
+            animate={{
+              height: phase === 'flash' ? 220 : dragOffset > 12 ? 72 : 0,
+              opacity: phase === 'flash' ? 0.95 : dragOffset > 12 ? 0.65 : 0,
+            }}
+            transition={{ duration: 0.35 }}
+            style={{
+              position: 'absolute',
+              top: '24px',
+              width: '4px',
+              borderRadius: '999px',
+              background: 'linear-gradient(180deg, #fef08a 0%, #facc15 45%, #f59e0b 100%)',
+              boxShadow: '0 0 22px 6px rgba(250, 204, 21, 0.65)',
+            }}
+          />
+
+          {/* Wand Tip Glow */}
+          <motion.div
+            animate={{
+              scale: phase === 'flash' ? 2.4 : 1 + dragOffset / 160,
+              opacity: phase === 'flash' ? 1 : 0.7,
+            }}
+            style={{
+              width: '14px',
+              height: '14px',
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, #fef08a 0%, #facc15 55%, transparent 100%)',
+              boxShadow: '0 0 18px 5px rgba(250, 204, 21, 0.55)',
+              marginBottom: '-6px',
+              zIndex: 2,
+            }}
+          />
+
+          {!wandImgFailed ? (
+            <img
+              src="./assets/elder-wand.png"
+              alt=""
+              onError={() => setWandImgFailed(true)}
+              style={{
+                height: 'clamp(120px, 20vh, 175px)',
+                width: 'auto',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 0 12px rgba(250, 204, 21, 0.28))',
+              }}
+            />
+          ) : (
+            /* Clean SVG Elder Wand Fallback */
+            <svg
+              width="28"
+              height="150"
+              viewBox="0 0 28 170"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M14 4L16 38C18 42 18 48 15.5 52L16.5 76C19 80 19 87 16.5 91L17.5 118C20 123 20 131 17 136L18 166H10L11 136C8 131 8 123 10.5 118L11.5 91C9 87 9 80 11.5 76L12.5 52C10 48 10 42 12 38L14 4Z"
+                fill="url(#wandGrad)"
+                stroke="#5c4033"
+                strokeWidth="0.8"
+              />
+              <defs>
+                <linearGradient id="wandGrad" x1="14" y1="4" x2="14" y2="166" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#4a3225" />
+                  <stop offset="0.5" stopColor="#2b1b13" />
+                  <stop offset="1" stopColor="#1c110b" />
+                </linearGradient>
+              </defs>
+            </svg>
+          )}
+        </motion.div>
 
         {isRepairedOrExiting && (
           <motion.div
@@ -478,106 +575,6 @@ export default function IntroAnimation({ onComplete }) {
           >
             <Sparkles size={18} />
           </motion.div>
-        )}
-      </motion.div>
-
-      {/* Bottom Center: Elder Wand + Luminous Golden Trail */}
-      <motion.div
-        aria-hidden="true"
-        animate={
-          phase === 'waiting'
-            ? { y: -dragOffset * 0.75, opacity: 1 }
-            : phase === 'flash'
-              ? { y: -window.innerHeight * 0.55, opacity: [1, 1, 0.3] }
-              : { y: -window.innerHeight * 0.65, opacity: 0 }
-        }
-        transition={
-          phase === 'waiting'
-            ? { type: 'spring', stiffness: 300, damping: 28 }
-            : { duration: 1.05, ease: 'easeInOut' }
-        }
-        style={{
-          position: 'absolute',
-          bottom: '-10px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 12,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          pointerEvents: 'none',
-        }}
-      >
-        {/* Golden Trail Behind Wand */}
-        <motion.div
-          animate={{
-            height: phase === 'flash' ? 240 : dragOffset > 12 ? 90 : 0,
-            opacity: phase === 'flash' ? 0.95 : dragOffset > 12 ? 0.6 : 0,
-          }}
-          transition={{ duration: 0.35 }}
-          style={{
-            position: 'absolute',
-            top: '30px',
-            width: '4px',
-            borderRadius: '999px',
-            background: 'linear-gradient(180deg, #fef08a 0%, #facc15 45%, #f59e0b 100%)',
-            boxShadow: '0 0 22px 6px rgba(250, 204, 21, 0.65)',
-          }}
-        />
-
-        {/* Wand Tip Glow */}
-        <motion.div
-          animate={{
-            scale: phase === 'flash' ? 2.4 : 1 + dragOffset / 180,
-            opacity: phase === 'flash' ? 1 : 0.65,
-          }}
-          style={{
-            width: '14px',
-            height: '14px',
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, #fef08a 0%, #facc15 55%, transparent 100%)',
-            boxShadow: '0 0 18px 5px rgba(250, 204, 21, 0.55)',
-            marginBottom: '-6px',
-            zIndex: 2,
-          }}
-        />
-
-        {!wandImgFailed ? (
-          <img
-            src="./assets/elder-wand.png"
-            alt=""
-            onError={() => setWandImgFailed(true)}
-            style={{
-              height: 'clamp(140px, 24vh, 210px)',
-              width: 'auto',
-              objectFit: 'contain',
-              mixBlendMode: 'screen',
-              filter: 'drop-shadow(0 0 10px rgba(250, 204, 21, 0.25))',
-            }}
-          />
-        ) : (
-          /* Clean SVG Elder Wand Fallback */
-          <svg
-            width="28"
-            height="170"
-            viewBox="0 0 28 170"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M14 4L16 38C18 42 18 48 15.5 52L16.5 76C19 80 19 87 16.5 91L17.5 118C20 123 20 131 17 136L18 166H10L11 136C8 131 8 123 10.5 118L11.5 91C9 87 9 80 11.5 76L12.5 52C10 48 10 42 12 38L14 4Z"
-              fill="url(#wandGrad)"
-              stroke="#5c4033"
-              strokeWidth="0.8"
-            />
-            <defs>
-              <linearGradient id="wandGrad" x1="14" y1="4" x2="14" y2="166" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#4a3225" />
-                <stop offset="0.5" stopColor="#2b1b13" />
-                <stop offset="1" stopColor="#1c110b" />
-              </linearGradient>
-            </defs>
-          </svg>
         )}
       </motion.div>
 
