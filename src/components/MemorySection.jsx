@@ -176,7 +176,7 @@ export default function MemorySection() {
         >
           {!imgError ? (
             <motion.img
-              src="/assets/midnight-calls.jpg"
+              src="./assets/midnight-calls.jpg"
               alt="Night-time desk with a warm lamp, phone, and alarm clock"
               loading="lazy"
               onError={() => setImgError(true)}

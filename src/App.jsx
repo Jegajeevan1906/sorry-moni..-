@@ -65,7 +65,7 @@ export default function App() {
           chapterNumber="01"
           label="The Beginning"
           heading="Hey, MONI...!"
-          imageSrc="/assets/september-canteen.jpg"
+          imageSrc="./assets/september-canteen.jpg"
           imageAlt="Nostalgic college canteen in warm September afternoon sunlight"
           variant="editorial"
           paragraphs={[
@@ -91,7 +91,7 @@ export default function App() {
           chapterNumber="03"
           label="The Distance"
           heading="And then, somewhere, things changed."
-          imageSrc="/assets/distance-platform.jpg"
+          imageSrc="./assets/distance-platform.jpg"
           imageAlt="Lonely railway platform in dark blue evening mist and rain"
           variant="mist"
           reverse
@@ -116,7 +116,7 @@ export default function App() {
           chapterNumber="04"
           label="The Things I Kept"
           heading="Not everything disappeared."
-          imageSrc="/assets/memory-book.jpg"
+          imageSrc="./assets/memory-book.jpg"
           imageAlt="Vintage book with a folded blank paper note in warm window light"
           variant="keepsake"
           paragraphs={[

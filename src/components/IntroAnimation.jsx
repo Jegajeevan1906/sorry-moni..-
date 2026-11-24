@@ -544,7 +544,7 @@ export default function IntroAnimation({ onComplete }) {
 
         {!wandImgFailed ? (
           <img
-            src="/assets/elder-wand.png"
+            src="./assets/elder-wand.png"
             alt=""
             onError={() => setWandImgFailed(true)}
             style={{

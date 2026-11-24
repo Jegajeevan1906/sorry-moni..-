@@ -92,7 +92,7 @@ export default function FinalQuestion() {
       {/* Sunset Background Image */}
       {!imgError && (
         <img
-          src="/assets/final-sunset.jpg"
+          src="./assets/final-sunset.jpg"
           alt=""
           aria-hidden="true"
           loading="lazy"

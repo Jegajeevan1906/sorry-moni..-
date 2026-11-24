@@ -50,7 +50,7 @@ export default function AdventureSection() {
         >
           {!imgError ? (
             <motion.img
-              src="/assets/cinematic-road.jpg"
+              src="./assets/cinematic-road.jpg"
               alt="Scenic mountain road at golden hour sunset"
               loading="lazy"
               onError={() => setImgError(true)}
