@@ -44,7 +44,7 @@ export default function App() {
       {/* Subtle 35mm film grain overlay */}
       <div className="film-grain" aria-hidden="true" />
 
-      <AudioPlayer />
+      <AudioPlayer shouldPlay={introDone} />
 
       <AnimatePresence mode="wait">
         {!introDone && (

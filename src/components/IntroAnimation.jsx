@@ -20,6 +20,7 @@ export default function IntroAnimation({ onComplete }) {
   const triggerReparoSequence = () => {
     if (phaseRef.current !== 'waiting') return;
     setDragOffset(0);
+    window.dispatchEvent(new Event('moni-unlock-bgm'));
 
     if (shouldReduceMotion) {
       setPhase('repaired');
@@ -335,7 +336,10 @@ export default function IntroAnimation({ onComplete }) {
       <button
         type="button"
         data-skip-intro="true"
-        onClick={onComplete}
+        onClick={() => {
+          window.dispatchEvent(new Event('moni-unlock-bgm'));
+          onComplete();
+        }}
         style={{
           position: 'absolute',
           top: '1.25rem',

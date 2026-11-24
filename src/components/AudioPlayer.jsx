@@ -2,15 +2,20 @@ import { useEffect, useRef, useState } from 'react';
 import { Volume2, VolumeX, Play, Pause } from 'lucide-react';
 
 /**
- * Background music player for the uploaded instrumental track (./assets/bgm.mp3).
- * Attempts immediate playback on load and unlocks on the very first user gesture
- * if the browser's autoplay policy blocks unmuted audio before interaction.
+ * Background music player for ./assets/bgm.mp3.
+ * Unlocks audio silently during the swipe gesture and starts playing
+ * automatically once the intro finishes (shouldPlay === true).
  */
-export default function AudioPlayer() {
+export default function AudioPlayer({ shouldPlay = false }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const audioRef = useRef(null);
   const userPausedRef = useRef(false);
+  const shouldPlayRef = useRef(shouldPlay);
+  const isMutedRef = useRef(isMuted);
+
+  shouldPlayRef.current = shouldPlay;
+  isMutedRef.current = isMuted;
 
   useEffect(() => {
     const audio = new Audio('./assets/bgm.mp3');
@@ -27,31 +32,29 @@ export default function AudioPlayer() {
     audio.addEventListener('pause', handlePause);
     audio.addEventListener('play', handlePlay);
 
-    const tryPlay = () => {
-      if (userPausedRef.current || !audioRef.current) return;
-      audioRef.current.play().catch(() => {
-        // Browser blocked unmuted autoplay; will unlock on first gesture below
-      });
+    // Unlock audio element synchronously inside the swipe/skip gesture
+    const handleUnlock = () => {
+      if (!audioRef.current || shouldPlayRef.current || userPausedRef.current) return;
+      const target = audioRef.current;
+      target.muted = true;
+      target
+        .play()
+        .then(() => {
+          if (!shouldPlayRef.current) {
+            target.pause();
+            target.currentTime = 0;
+          }
+          target.muted = isMutedRef.current;
+        })
+        .catch(() => {
+          target.muted = isMutedRef.current;
+        });
     };
 
-    const handleFirstGesture = () => {
-      if (!userPausedRef.current && audioRef.current && audioRef.current.paused) {
-        audioRef.current.play().catch(() => {});
-      }
-      window.removeEventListener('pointerdown', handleFirstGesture);
-      window.removeEventListener('touchstart', handleFirstGesture);
-      window.removeEventListener('keydown', handleFirstGesture);
-    };
-
-    tryPlay();
-    window.addEventListener('pointerdown', handleFirstGesture, { passive: true });
-    window.addEventListener('touchstart', handleFirstGesture, { passive: true });
-    window.addEventListener('keydown', handleFirstGesture);
+    window.addEventListener('moni-unlock-bgm', handleUnlock);
 
     return () => {
-      window.removeEventListener('pointerdown', handleFirstGesture);
-      window.removeEventListener('touchstart', handleFirstGesture);
-      window.removeEventListener('keydown', handleFirstGesture);
+      window.removeEventListener('moni-unlock-bgm', handleUnlock);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('play', handlePlay);
@@ -59,6 +62,25 @@ export default function AudioPlayer() {
       audioRef.current = null;
     };
   }, []);
+
+  // Automatically start playing as soon as the swipe intro completes
+  useEffect(() => {
+    if (!shouldPlay || userPausedRef.current || !audioRef.current) return;
+    const audio = audioRef.current;
+    audio.muted = isMutedRef.current;
+    audio.play().catch(() => {
+      // Fallback: if still blocked, start on next touch/click
+      const resumeOnTap = () => {
+        if (!userPausedRef.current && audioRef.current && audioRef.current.paused) {
+          audioRef.current.play().catch(() => {});
+        }
+        window.removeEventListener('pointerdown', resumeOnTap);
+        window.removeEventListener('touchstart', resumeOnTap);
+      };
+      window.addEventListener('pointerdown', resumeOnTap, { passive: true });
+      window.addEventListener('touchstart', resumeOnTap, { passive: true });
+    });
+  }, [shouldPlay]);
 
   const togglePlay = async () => {
     const audio = audioRef.current;
@@ -85,6 +107,8 @@ export default function AudioPlayer() {
       audio.muted = nextMuted;
     }
   };
+
+  if (!shouldPlay) return null;
 
   return (
     <div
