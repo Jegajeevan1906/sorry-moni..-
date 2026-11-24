@@ -1,10 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { CheckCircle2, ExternalLink, Loader2, MessageCircle } from 'lucide-react';
 import ParticleField from './ParticleField.jsx';
-import { APOLOGY_MESSAGES, getWhatsAppFallbackUrl } from '../services/whatsappService.js';
+import { getWhatsAppFallbackUrl } from '../services/whatsappService.js';
 
-// 5 progressive size levels for the "Never 🤐" button (levels 0..4, click 5 triggers send)
+// 5 progressive size levels for the "Never 🤐" button (levels 0..4, click 5 opens WhatsApp directly)
 const NEVER_LEVEL_STYLES = [
   {
     width: 'min(440px, 88vw)',
@@ -46,42 +45,29 @@ const NEVER_LEVEL_STYLES = [
 export default function FinalQuestion() {
   const shouldReduceMotion = useReducedMotion();
   const [neverClicks, setNeverClicks] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [result, setResult] = useState(null);
   const [imgError, setImgError] = useState(false);
 
-  const idempotencyKey = useMemo(
-    () => `moni-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    []
-  );
-
-  const submitChoice = (action) => {
-    if (isSubmitting || result) return;
-    const fallbackUrl = getWhatsAppFallbackUrl(action);
-    const messageText = APOLOGY_MESSAGES[action];
-    if (!fallbackUrl) return;
-
-    setIsSubmitting(true);
-    setResult({
-      status: 'redirecting',
-      fallbackUrl,
-      messageText,
-      action,
-    });
-    window.location.href = fallbackUrl;
-  };
-
-  const handleNeverClick = () => {
-    if (isSubmitting || result) return;
-    if (neverClicks < 4) {
-      setNeverClicks((prev) => prev + 1);
-      return;
-    }
-    // Click 5 triggers the WhatsApp message
-    submitChoice('decline');
-  };
-
+  const acceptUrl = getWhatsAppFallbackUrl('accept');
+  const declineUrl = getWhatsAppFallbackUrl('decline');
   const currentNeverStyle = NEVER_LEVEL_STYLES[Math.min(neverClicks, 4)];
+
+  const neverCommonStyle = {
+    maxWidth: '100%',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: 500,
+    border: '1px solid rgba(243, 235, 221, 0.26)',
+    background: 'rgba(16, 25, 43, 0.78)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
+    color: '#f3ebdd',
+    cursor: 'pointer',
+    boxShadow: '0 14px 36px rgba(0, 0, 0, 0.38)',
+    lineHeight: 1.2,
+    textAlign: 'center',
+    textDecoration: 'none',
+  };
 
   return (
     <section
@@ -189,193 +175,84 @@ export default function FinalQuestion() {
         </p>
 
         {/* Interactive Choice Area */}
-        {!result ? (
-          <div
+        <div
+          style={{
+            marginTop: '1.25rem',
+            width: '100%',
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '1.25rem',
+          }}
+        >
+          {/* BUTTON A: Direct link to WhatsApp DM */}
+          <motion.a
+            href={acceptUrl}
+            whileHover={shouldReduceMotion ? {} : { scale: 1.04, y: -2 }}
+            whileTap={shouldReduceMotion ? {} : { scale: 0.97 }}
             style={{
-              marginTop: '1.25rem',
-              width: '100%',
-              display: 'flex',
-              flexDirection: 'column',
+              display: 'inline-flex',
               alignItems: 'center',
-              gap: '1.5rem',
+              justifyContent: 'center',
+              minHeight: '42px',
+              padding: '0.62rem 1.25rem',
+              fontSize: '0.86rem',
+              fontWeight: 500,
+              borderRadius: '999px',
+              border: '1px solid rgba(250, 204, 21, 0.75)',
+              background: 'linear-gradient(135deg, #facc15 0%, #f59e0b 100%)',
+              color: '#120c12',
+              cursor: 'pointer',
+              boxShadow: '0 8px 24px rgba(250, 204, 21, 0.25)',
+              letterSpacing: '0.01em',
+              whiteSpace: 'nowrap',
+              textDecoration: 'none',
             }}
           >
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '1.25rem',
-                width: '100%',
+            Na unna manichitten 😁
+          </motion.a>
+
+          {/* BUTTON B: Clicks 1-4 shrink; 5th click opens WhatsApp DM directly */}
+          {neverClicks < 4 ? (
+            <motion.button
+              type="button"
+              layout
+              animate={{
+                width: currentNeverStyle.width,
+                minHeight: currentNeverStyle.minHeight,
+                padding: currentNeverStyle.padding,
+                fontSize: currentNeverStyle.fontSize,
+                borderRadius: currentNeverStyle.borderRadius,
               }}
+              whileHover={shouldReduceMotion ? {} : { scale: 1.02 }}
+              whileTap={shouldReduceMotion ? {} : { scale: 0.97 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+              onClick={() => setNeverClicks((prev) => prev + 1)}
+              style={neverCommonStyle}
             >
-              {/* BUTTON A: Small, elegant warm gold button */}
-              <motion.button
-                type="button"
-                disabled={isSubmitting}
-                whileHover={shouldReduceMotion ? {} : { scale: 1.04, y: -2 }}
-                whileTap={shouldReduceMotion ? {} : { scale: 0.97 }}
-                onClick={() => submitChoice('accept')}
-                style={{
-                  minHeight: '42px',
-                  padding: '0.62rem 1.25rem',
-                  fontSize: '0.86rem',
-                  fontWeight: 500,
-                  borderRadius: '999px',
-                  border: '1px solid rgba(250, 204, 21, 0.75)',
-                  background: 'linear-gradient(135deg, #facc15 0%, #f59e0b 100%)',
-                  color: '#120c12',
-                  cursor: isSubmitting ? 'wait' : 'pointer',
-                  boxShadow: '0 8px 24px rgba(250, 204, 21, 0.25)',
-                  letterSpacing: '0.01em',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Na unna manichitten 😁
-              </motion.button>
-
-              {/* BUTTON B: Starts 5x larger, shrinks across 5 levels, click 5 sends */}
-              <motion.button
-                type="button"
-                disabled={isSubmitting}
-                layout
-                animate={{
-                  width: currentNeverStyle.width,
-                  minHeight: currentNeverStyle.minHeight,
-                  padding: currentNeverStyle.padding,
-                  fontSize: currentNeverStyle.fontSize,
-                  borderRadius: currentNeverStyle.borderRadius,
-                }}
-                whileHover={shouldReduceMotion ? {} : { scale: 1.02 }}
-                whileTap={shouldReduceMotion ? {} : { scale: 0.97 }}
-                transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-                onClick={handleNeverClick}
-                style={{
-                  maxWidth: '100%',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 500,
-                  border: '1px solid rgba(243, 235, 221, 0.26)',
-                  background: 'rgba(16, 25, 43, 0.78)',
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
-                  color: '#f3ebdd',
-                  cursor: isSubmitting ? 'wait' : 'pointer',
-                  boxShadow: '0 14px 36px rgba(0, 0, 0, 0.38)',
-                  lineHeight: 1.2,
-                  textAlign: 'center',
-                }}
-              >
-                Never 🤐
-              </motion.button>
-            </div>
-
-            {isSubmitting && (
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  color: '#fef08a',
-                  fontSize: '0.9rem',
-                }}
-              >
-                <Loader2 size={16} className="animate-spin" />
-                <span>Preparing your response...</span>
-              </div>
-            )}
-          </div>
-        ) : (
-          /* Response Confirmation Card */
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            style={{
-              marginTop: '1rem',
-              width: '100%',
-              maxWidth: '500px',
-              padding: '1.75rem',
-              borderRadius: '16px',
-              background: 'rgba(16, 25, 43, 0.86)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              border:
-                result.status === 'sent'
-                  ? '1px solid rgba(52, 211, 153, 0.45)'
-                  : '1px solid rgba(250, 204, 21, 0.4)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '0.95rem',
-              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.45)',
-            }}
-          >
-            {result.status === 'sent' ? (
-              <>
-                <CheckCircle2 size={32} color="#34d399" />
-                <h3
-                  className="font-serif-display"
-                  style={{ fontSize: '1.65rem', color: '#f3ebdd' }}
-                >
-                  Message Sent
-                </h3>
-                <p style={{ fontSize: '0.92rem', color: 'rgba(243, 235, 221, 0.8)' }}>
-                  Your response (“{result.messageText}”) was accepted by WhatsApp for
-                  delivery.
-                </p>
-              </>
-            ) : (
-              <>
-                <MessageCircle size={30} color="#facc15" />
-                <h3
-                  className="font-serif-display"
-                  style={{ fontSize: '1.6rem', color: '#f3ebdd' }}
-                >
-                  Ready to Send on WhatsApp
-                </h3>
-                <p style={{ fontSize: '0.9rem', color: 'rgba(243, 235, 221, 0.8)', lineHeight: 1.6 }}>
-                  Automatic server delivery is not active right now, so no message has
-                  been sent yet. Tap below to open WhatsApp with your message
-                  pre-filled, then press <strong>Send</strong> in the chat.
-                </p>
-                <p
-                  style={{
-                    fontSize: '0.85rem',
-                    padding: '0.55rem 0.9rem',
-                    borderRadius: '8px',
-                    background: 'rgba(243, 235, 221, 0.06)',
-                    color: '#fef08a',
-                  }}
-                >
-                  “{result.messageText}”
-                </p>
-                <a
-                  href={result.fallbackUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.75rem 1.4rem',
-                    borderRadius: '999px',
-                    background: 'linear-gradient(135deg, #facc15 0%, #f59e0b 100%)',
-                    color: '#120c12',
-                    fontWeight: 600,
-                    fontSize: '0.9rem',
-                    textDecoration: 'none',
-                    boxShadow: '0 8px 24px rgba(250, 204, 21, 0.25)',
-                  }}
-                >
-                  <span>Open WhatsApp &amp; Press Send</span>
-                  <ExternalLink size={15} />
-                </a>
-              </>
-            )}
-          </motion.div>
-        )}
+              Never 🤐
+            </motion.button>
+          ) : (
+            <motion.a
+              href={declineUrl}
+              layout
+              animate={{
+                width: currentNeverStyle.width,
+                minHeight: currentNeverStyle.minHeight,
+                padding: currentNeverStyle.padding,
+                fontSize: currentNeverStyle.fontSize,
+                borderRadius: currentNeverStyle.borderRadius,
+              }}
+              whileHover={shouldReduceMotion ? {} : { scale: 1.02 }}
+              whileTap={shouldReduceMotion ? {} : { scale: 0.97 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+              style={neverCommonStyle}
+            >
+              Never 🤐
+            </motion.a>
+          )}
+        </div>
 
         {/* Central Philosophy Footer */}
         <p
@@ -396,4 +273,3 @@ export default function FinalQuestion() {
     </section>
   );
 }
-
